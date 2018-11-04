@@ -8,8 +8,8 @@ Usage instructions:
 import gensim
 
 # load species embeddings
-m = gensim.models.KeyedVectors.load_word2vec_format('species2vec_200K.vec')
+m = gensim.models.KeyedVectors.load_word2vec_format('mammalia_6M.vec')
 
 # test species embeddings
-m.most_similar(u'Loxodonta_africana')
+m.most_similar(u'Grammomys_ibeanus')
 ```
