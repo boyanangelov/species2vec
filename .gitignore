@@ -2,3 +2,10 @@
 *bin
 *txt
 notebooks/.ipynb_checkpoints
+.venv/
+.claude/
+runs/
+data/
+__pycache__/
+*.pyc
+.DS_Store
