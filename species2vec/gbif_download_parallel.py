@@ -34,7 +34,7 @@ def worker(
     while offset < max_records:
         try:
             params = {
-                "orderKey": key,
+                "taxonKey": key,
                 "country": country,
                 "hasCoordinate": "true",
                 "hasGeospatialIssue": "false",
@@ -76,6 +76,9 @@ def worker(
 def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--order", default="Squamata")
+    p.add_argument("--rank", default="order",
+                   help="Backbone rank for name lookup (order, family, genus, ...). "
+                        "Use 'any' to let GBIF pick the best match.")
     p.add_argument("--out", default="data/squamata.csv")
     p.add_argument("--per-country", type=int, default=10000)
     p.add_argument(
@@ -91,8 +94,9 @@ def main() -> int:
     )
     args = p.parse_args()
 
-    key = order_key(args.order)
-    print(f"orderKey({args.order}) = {key}"
+    rank = None if args.rank == "any" else args.rank
+    key = order_key(args.order, rank=rank)
+    print(f"taxonKey({args.order}, rank={rank}) = {key}"
           + (f"  year={args.year}" if args.year else ""))
     all_rows: list = []
     pbar = tqdm(total=args.per_country * len(args.countries), desc=args.order)

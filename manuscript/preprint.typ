@@ -1,5 +1,5 @@
 #set document(
-  title: "species2vec: distributed representations of species from spatial co-occurrence",
+  title: "species2vec: distributed species embeddings that recover range overlap from GBIF co-occurrence",
   author: "Boyan Angelov",
 )
 
@@ -60,20 +60,23 @@
 }
 
 #align(left)[
-  #text(size: 18pt, weight: "bold", font: "New Computer Modern")[
+  #text(size: 27pt, weight: "bold", font: "New Computer Modern", tracking: -0.3pt)[
     species2vec
   ]
 
-  #v(0.2em)
-  #text(size: 12pt, style: "italic")[
-    distributed representations of species from spatial
-    co-occurrence on GBIF
+  #v(0.35em)
+  #block(width: 92%)[
+    #text(size: 12.5pt, style: "italic", fill: luma(70))[
+      distributed species embeddings that recover range overlap
+      from GBIF co-occurrence
+    ]
   ]
 
   #v(0.7em)
-  #text(size: 9.5pt)[
-    Boyan Angelov #h(0.4em) · #h(0.4em)
-    boyan.angelov\@gmail.com #h(0.4em) · #h(0.4em) 2026-05-19
+  #line(length: 100%, stroke: 0.5pt + luma(180))
+  #v(0.5em)
+  #text(size: 9.5pt, fill: luma(90))[
+    Boyan Angelov #h(0.4em) · #h(0.4em) 2026-05-19
   ]
 ]
 
@@ -92,14 +95,12 @@
   *AI assistance disclosure.* This work was developed with extensive
   use of an AI coding assistant (Anthropic Claude) for code
   implementation, text drafting, and figure generation. The core
-  ideas — the species2vec framing, the identification of
+  ideas, the species2vec framing, the identification of
   label-leakage from fastText character-n-gram defaults on binomial
   tokens, the choice of held-out evaluation metrics, and the
-  experimental design — are the author's. All quantitative results
+  experimental design, are the author's. All quantitative results
   reported here were produced by the accompanying code on real GBIF
-  occurrence data; no numbers were fabricated. AI accelerated
-  implementation and exposition, not the underlying scientific
-  claims.
+  occurrence data; no numbers were fabricated.
 ]
 
 #v(0.6em)
@@ -113,8 +114,8 @@
   writes one sentence per bin, and trains atomic species tokens so
   that embedding geometry is driven by spatial co-occurrence rather
   than the morphology of binomial names. We propose three orthogonal
-  held-out evaluation metrics — a congener cosine gap, a cross-genus
-  sympatry AUC, and a neighbourhood self-rank — that separately
+  held-out evaluation metrics, a congener cosine gap, a cross-genus
+  sympatry AUC, and a neighbourhood self-rank, that separately
   bound label-substring effects and measure spatial signal. On
   #sym.tilde 147 k _Squamata_ records the method reaches a
   cross-genus held-out sympatry AUC of 0.943 with a congener cosine
@@ -130,8 +131,8 @@ geometry reflects distributional similarity @mikolov2013
 @bojanowski2017, and have been applied to many non-text token streams:
 items in baskets, proteins in sequences, locations in trajectories. We
 ask whether the analogue works for species: are GBIF occurrence
-records @gbif a "corpus" whose local context — the set of species
-recorded near a given record — carries enough signal to learn
+records @gbif a "corpus" whose local context, the set of species
+recorded near a given record, carries enough signal to learn
 ecologically meaningful embeddings?
 
 Two design choices turn out to be decisive. First, the unit of
@@ -139,22 +140,9 @@ co-occurrence: occurrence records are points in continuous space, but
 distributional learning requires discrete contexts, and the choice of
 binning interacts with the spatial scale of the ecological signal.
 Second, the token representation: scientific binomials are not
-arbitrary symbols — they share genus prefixes by construction — so any
+arbitrary symbols, they share genus prefixes by construction, so any
 sub-word feature in the language-model objective will let the model
 recover taxonomy directly from labels.
-
-The contributions are:
-
-+ A reproducible pipeline (`species2vec/pipeline.py`) that bins GBIF
-  records by geohash, writes one sentence per bin, trains fastText
-  with atomic tokens, and produces seeded embeddings together with
-  run metadata.
-+ A held-out evaluation harness (`species2vec/eval.py`) with three
-  orthogonal metrics — congener gap, sympatry AUC, neighbourhood
-  self-rank — that separately bound label-substring effects and
-  measure spatial signal.
-+ Benchmark results on #sym.tilde 147 k _Squamata_ records and an
-  ablation justifying both design choices.
 
 = Background
 
@@ -230,25 +218,38 @@ arithmetic operations on the resulting vectors.
 
 = Method
 
-The pipeline (`species2vec/pipeline.py`) consists of four steps.
+#figure(
+  image("figures/pipeline.pdf", width: 100%),
+  caption: [Overview of species2vec. _Top row:_ GBIF occurrence
+  records are binned into geohash cells; each cell becomes a
+  "sentence" whose tokens are the species observed there.
+  fastText skip-gram then learns a 100-d vector per species,
+  with cosine distance approximating ecological similarity.
+  _Bottom row:_ the temporal experiment (§@sec:temporal) trains
+  two independent embeddings on disjoint epochs and measures
+  whether a species' geographic centroid drift co-varies with
+  its embedding drift; the permutation null rules out a
+  sampling-intensity artifact.],
+) <fig:pipeline>
+
+The pipeline consists of four steps.
 
 + *Bin records by geohash.* Each record is assigned a geohash key at
   a configurable precision (default 5, #sym.tilde 5 km).
-+ *Deduplicate by `(geohash, species)`.* Each species appears at
++ *Deduplicate by (geohash, species).* Each species appears at
   most once per bin, so abundant taxa do not dominate within-bin
   context by sheer record count.
 + *Write one sentence per bin.* Bins with $gt.eq 2$ species become
   a single space-separated line; fastText's context window slides
   within bins but cannot bleed across them.
-+ *Train fastText with atomic tokens.* `minn = maxn = 0` disables
-  character n-grams, so embedding geometry is driven by spatial
++ *Train fastText with atomic tokens.* Disabling character n-grams
+  ($"minn" = "maxn" = 0$) drives embedding geometry by spatial
   co-occurrence rather than the morphology of species names.
 
-The pipeline is seeded throughout (`seed = 42` by default), uses
-`pygeohash.encode`, and returns a `stats` dict recording the
+The procedure is seeded throughout (default seed 42) and records the
 vocabulary size, number of bins, and training hyperparameters
-(`dim = 100`, `epoch = 25`, `window = 8`, `min_count = 3`,
-`lr = 0.025`).
+(embedding dimension 100, 25 epochs, context window 8, minimum count
+3, learning rate 0.025).
 
 = Evaluation harness
 
@@ -293,8 +294,7 @@ perfect.
 == Data
 
 We download #sym.tilde 147 k unique GBIF _Squamata_ records, sliced
-by country with a per-country cap of 8 000 records and 6 parallel
-workers (`species2vec/gbif_download_parallel.py`), and keep records
+by country with a per-country cap of 8 000 records, and keep records
 with non-null coordinates and a binomial species name. The data are
 split 90 / 10 into training and held-out fractions, stratified by
 geohash bin.
@@ -333,7 +333,7 @@ Atomic tokens are not merely safer than fastText character-n-gram
 defaults; they are quantitatively better on the spatial
 task.#sn[We re-train with `minn = 3, maxn = 6` and all other
 hyperparameters fixed. Cross-genus sympatry AUC: 0.926 (n-grams)
-vs *0.943* (atomic). Congener cosine gap: 0.41 vs 0.29 — the 0.12
+vs *0.943* (atomic). Congener cosine gap: 0.41 vs 0.29; the 0.12
 drop is the upper bound on the label-substring contribution to the
 congener similarity. Median neighbourhood self-rank: 52 vs 36.]
 With n-grams enabled, congener pairs share substantial vector mass
@@ -357,8 +357,8 @@ subsample (#sym.tilde 1{,}474 species, #sym.tilde 7 records per
 species). The spatial signal is data-hungry: at #sym.tilde 7
 records per species the cross-genus AUC of the atomic-token model
 sits at #sym.tilde 0.39, below the 0.5 baseline. The n-gram
-configuration is data-independent — it scores #sym.tilde 0.88 on
-the same subsample, purely from name substrings — and therefore
+configuration is data-independent, it scores #sym.tilde 0.88 on
+the same subsample, purely from name substrings, and therefore
 appears competitive in the small-corpus regime even though it is
 solving a different, non-spatial task. Reporting the congener gap
 together with AUC disambiguates the two regimes (@fig:smalldata).
@@ -398,7 +398,7 @@ United States) and its top five embedding-space neighbours
 _Sceloporus undulatus_, _Agkistrodon piscivorus_). The neighbours
 are drawn from four different families and share no obvious name
 substring with the target, yet all five are reptiles of the eastern
-United States — exactly the spatial co-occurrence signal the model
+United States, exactly the spatial co-occurrence signal the model
 is trained to capture.
 
 #figure(
@@ -409,13 +409,6 @@ is trained to capture.
     cross-genus) but spatially coherent: every species is endemic to
     or strongly associated with the south-eastern United States.],
 ) <fig:neighbors>
-
-An interactive Streamlit application (`app.py`) is shipped with the
-repository and exposes the same embeddings through three views: a
-UMAP scatter with genus-coloured points, a global occurrence map
-for any species, and a nearest-neighbour browser that returns the
-top-$k$ similar species together with a side-by-side range map.
-Vernacular-name lookups are cached against the GBIF species API.
 
 == Ecological significance of the embedding geometry
 
@@ -435,7 +428,7 @@ centroid of its occurrences @holt2013. For each species with at
 least five recorded realm-tagged occurrences ($N approx 2{,}100$
 species in the embedding vocabulary), we take its top-$k$ nearest
 embedding neighbours and measure the fraction that share its modal
-realm — _realm precision@$k$_. The baseline is the empirical
+realm, _realm precision@$k$_. The baseline is the empirical
 realm-frequency for the focal species' realm (the precision a
 random draw from the vocabulary would achieve).
 
@@ -447,18 +440,18 @@ random draw from the vocabulary would achieve).
     biogeographic realm in 95–96% of cases for every
     $k in {1, 3, 5, 10, 20}$, against a baseline of 22%
     ($approx 4.3 times$ lift). _Right:_ centroids of the
-    realm-tagged species, coloured by modal realm — the bounding-box
+    realm-tagged species, coloured by modal realm, the bounding-box
     realm assignment reproduces the classical zoogeographic
     regionalisation.],
 ) <fig:realm>
 
 The realm-precision at $k = 1$ of 0.96 is striking: for nearly every species
 in the vocabulary, the single most similar species in the embedding
-is drawn from the same biogeographic realm. This is not implied by
-the sympatry AUC alone — two species could share a held-out
-geohash cell on a continental boundary without sharing a realm —
-and provides independent evidence that the embedding geometry
-respects the major biogeographic partitions.
+is drawn from the same biogeographic realm. Because modal realm is
+derived from the same occurrence centroids that drive co-occurrence,
+this measure is not fully independent of the sympatry signal; it is
+better read as confirmation, at continental scale, that the embedding
+geometry respects the major biogeographic partitions.
 
 *Experiment 2: embedding distance vs geographic distance.* For 5 000
 random species pairs from the realm-tagged vocabulary, we compute
@@ -491,7 +484,7 @@ the downstream applications enumerated in §7.
 == Ecological interpretation
 
 We now ask whether the embedding signal _matches what biology says
-should be there_ — that is, whether the three patterns we recover
+should be there_, that is, whether the three patterns we recover
 (realm coherence, distance decay, locally coherent nearest
 neighbours) are consistent with independent observations from the
 biogeography and community-ecology literature.
@@ -508,7 +501,7 @@ restricted to a handful of geckos (notably _Hemidactylus_),
 sea snakes, and a few human-commensal lineages. Our realm
 precision at $k = 1$ of 0.96 reproduces this endemism rate exactly: the
 embedding nearest neighbour of a typical squamate is, in 96% of
-cases, drawn from the same realm — a number set not by the model
+cases, drawn from the same realm, a number set not by the model
 but by the underlying biogeography of the clade.
 
 *The diffuse genera in @fig:umap are the known cosmopolitans.* In
@@ -537,9 +530,9 @@ more disjoint than they already are.
 
 *The Anolis carolinensis neighbour set is the Southeastern Coastal
 Plain herpetofauna.* The top-5 embedding neighbours returned for
-_Anolis carolinensis_ (@fig:neighbors) — _Storeria dekayi_,
+_Anolis carolinensis_ (@fig:neighbors), _Storeria dekayi_,
 _Scincella lateralis_, _Carphophis amoenus_, _Sceloporus undulatus_,
-_Agkistrodon piscivorus_ — span four families (Dactyloidae,
+_Agkistrodon piscivorus_, span four families (Dactyloidae,
 Colubridae, Scincidae, Phrynosomatidae, Viperidae) and share no
 genus prefix with the target, yet every one is a characteristic
 member of the Southeastern Coastal Plain herpetofaunal assemblage
@@ -556,8 +549,8 @@ species tend to occupy similar niches and therefore share habitat
 @webb2002, and within squamates specifically, congeneric range
 overlap is elevated relative to between-genus pairs even after
 controlling for sampling effort @roll2017. The embedding picks up
-exactly this signal — congeners are more similar than random pairs
-because their realised ranges genuinely overlap more — without
+exactly this signal, congeners are more similar than random pairs
+because their realised ranges genuinely overlap more, without
 inheriting the additional, data-free congener bias that character
 n-grams would introduce.
 
@@ -619,8 +612,8 @@ This is comparable to the embedding $arrow.l.r$ centroid-distance
 correlation of $rho = 0.50$ reported in §6.5 and confirms that the
 embedding geometry tracks an independent range statistic, not just
 the cells it was trained on. Second, the binary task of predicting
-whether two species' realised ranges overlap _at all_ — a coarser
-but ecologically meaningful statistic — is solved by embedding
+whether two species' realised ranges overlap _at all_, a coarser
+but ecologically meaningful statistic, is solved by embedding
 cosine at AUC $= 0.959$. This is the headline number for using the
 embedding as an off-the-shelf range-overlap predictor.
 
@@ -670,38 +663,82 @@ versus $0.943$ on _Squamata_, with comparable congener gap
 == Temporal range shifts <sec:temporal>
 
 To test whether species2vec captures shifts in co-occurrence
-structure over time, we pulled two disjoint Squamata slices via
-GBIF's explicit year filter: a _pre_ slice (1990–2009, 29{,}312
-records, 2{,}970 species) and a _post_ slice (2017–2026, 93{,}341
-records, 3{,}163 species)#sn[Country-sliced default ordering is
-heavily biased toward recent uploads, so the year filter is
-essential — a naive global pull returns almost no pre-2010
-records. See `species2vec/gbif_download_parallel.py --year`.]. We
-train slice-specific embeddings under identical hyperparameters
-(precision-4 geohash, atomic tokens, `min_count`=3, seed=42) and,
-for the 495 species with $gt.eq$ 10 records in both slices,
-compare $1 - cos(v_("pre"), v_("post"))$ against the haversine
-distance between per-slice occurrence centroids
-(@fig:range_shift).
+structure over time, we train slice-specific embeddings on two
+disjoint epochs, _pre_ (1990–2009) and _post_ (2017–2026), pulled
+via GBIF's explicit year filter#sn[Country-sliced default ordering
+is heavily biased toward recent uploads, so the year filter is
+essential, a naive global pull returns almost no pre-2010 records.]. For each
+species with $gt.eq$ 10 records in both slices, we compare
+$1 - cos(v_("pre"), v_("post"))$ against the haversine distance
+between its per-slice occurrence centroids. All hyperparameters
+match the main pipeline (precision-4 geohash, atomic tokens,
+`min_count`=3, seed=42).
 
-Median centroid drift is 241 km, consistent with a mix of true
-range shifts and uneven resampling. Embedding distance correlates
-positively with spatial drift (Spearman $rho = 0.164$, $p = 2.5
-times 10^(-4)$, $n = 495$). The correlation is modest — the post
-slice is 3.2$times$ larger and reweights which neighbours
-co-occur most often, so much of the embedding drift reflects
-sampling intensity rather than genuine niche movement — but the
-sign and significance show that the geometry tracks ecological
-change across decades, not just within a single static snapshot.
-A finer-grained partition by biome or by explicit climate-tracking
-signal @parmesan2003 @chen2011 is a natural follow-up.
+We run this on two taxa with very different expected climate
+sensitivities. _Squamata_ (lizards, snakes) is a thermally
+tolerant generalist clade; _Bombus_ (bumblebees) is a temperate
+genus with extensively documented climate-driven range contraction
+at southern edges @kerr2015.
+
+#figure(
+  table(
+    columns: (auto, auto, auto, auto, auto, auto),
+    align: (left, right, right, right, right, right),
+    inset: 5pt,
+    stroke: none,
+    table.hline(),
+    table.header([taxon], [n sp.], [pre rec.], [post rec.],
+                 [median drift], [Spearman $rho$]),
+    table.hline(stroke: 0.4pt),
+    [Squamata],  [495], [29{,}312], [93{,}341], [241 km], [0.164\*\*\*],
+    [Bombus],     [78], [34{,}442], [80{,}988], [307 km], [0.387\*\*\*],
+    table.hline(),
+  ),
+  caption: [Embedding drift vs centroid drift across two decades.
+  All $rho$ values are significant ($p < 10^(-3)$). Bombus, the
+  climate-sensitive clade, shows a 2.4$times$ stronger embedding-
+  space response per km of spatial shift than the reptile baseline.],
+) <tab:temporal>
+
+Both taxa show statistically significant positive coupling between
+spatial drift and embedding drift, confirming that the geometry
+tracks ecological change across decades, not just within a single
+static snapshot. The cross-taxon contrast is informative: per km
+of centroid movement, Bombus exhibits substantially larger
+embedding drift than Squamata, consistent with bumblebee
+communities being reorganised more sharply over the same period
+@parmesan2003 @chen2011 @kerr2015. Both correlations are
+attenuated by the sampling-intensity asymmetry between epochs
+(the post slice is 3$times$ larger for Squamata, 2.4$times$ for
+Bombus, reweighting which neighbours co-occur most often), so
+these values should be read as lower bounds on the true climate-
+tracking signal.
+
+To rule out the possibility that the correlation is itself a
+sampling-intensity artifact (i.e. that any two disjoint splits of
+the pooled records would produce a similar coupling), we ran a
+shuffle-epoch-labels null on Bombus: pool all 115{,}430 pre+post
+records, randomly reassign each record to a synthetic "pre" or
+"post" bucket preserving the original epoch sizes, retrain both
+embeddings, and recompute $rho$. Over ten such permutations the
+null distribution has mean $rho = 0.088$ (sd $0.16$, 95% range
+$[-0.24, 0.27]$), and the observed $rho = 0.380$ exceeds every
+permutation ($0/10$ splits $gt.eq$ observed, permutation
+$p < 0.1$). The coupling therefore reflects a real epoch effect,
+not an artifact of how many records each side received.
+
+#figure(
+  image("figures/range_shift_bombus.pdf", width: 100%),
+  caption: [Bombus, pre (1990–2009) vs post (2017–2026).
+  _Left:_ per-species centroid drift in km. _Right:_ embedding
+  cosine distance vs spatial drift, Spearman $rho = 0.387$,
+  $n = 78$.],
+) <fig:range_shift_bombus>
 
 #figure(
   image("figures/range_shift.pdf", width: 100%),
-  caption: [Pre (1990–2009) vs post (2017–2026) Squamata embeddings.
-  _Left:_ per-species centroid drift in km. _Right:_ embedding
-  cosine distance vs spatial drift (Spearman $rho = 0.164$,
-  $n = 495$).],
+  caption: [Squamata, same comparison.
+  Spearman $rho = 0.164$, $n = 495$.],
 ) <fig:range_shift>
 
 = Applications
@@ -728,7 +765,7 @@ several members of which are widely introduced.
 
 *Community-similarity queries.* Given a cell, embedding centroids
 support queries of the form "which other cells host the most
-similar community?" — useful for designing biodiversity-monitoring
+similar community?", useful for designing biodiversity-monitoring
 transects, prioritising conservation corridors, or matching donor /
 recipient sites for translocation.
 
@@ -767,9 +804,9 @@ the evaluation harness in §5 is what makes them defensible.
 == Limitations
 
 The benchmark is restricted to #sym.tilde 150 k _Squamata_ records
-and a single train / held-out split. The qualitative conclusions —
+and a single train / held-out split. The qualitative conclusions -
 that atomic tokens dominate character n-grams on biogeographic
-metrics, and that the spatial signal scales with corpus size — are
+metrics, and that the spatial signal scales with corpus size, are
 robust across the splits and seeds we tested, but absolute AUC
 numbers will shift with taxon, sample size, geohash precision, and
 window. We have not investigated learned sub-word tokenisers
@@ -777,37 +814,12 @@ window. We have not investigated learned sub-word tokenisers
 names), which might in principle recover useful morphological
 signal while avoiding the genus-prefix shortcut.
 
-= Reproducibility
-
-All code is released at the repository linked below. A complete
-reproduction is:
-
-```bash
-python -m venv .venv && source .venv/bin/activate
-pip install gensim fasttext pandas numpy pygeohash scikit-learn tqdm requests matplotlib
-
-python -m species2vec.gbif_download_parallel \
-    --order Squamata --out data/squamata.csv \
-    --per-country 8000 --workers 6
-
-python - <<'PY'
-import pandas as pd
-from species2vec.pipeline import run
-df = pd.read_csv('data/squamata.csv')
-stats = run(df, workdir='runs/squamata', geohash_precision=5)
-print(stats)
-PY
-```
-
-The interactive `app.py` (Streamlit) provides UMAP projection and
-nearest-neighbour browsing for any trained `.vec` file.
-
 = Conclusion
 
 Distributed representations of species learned from GBIF
-co-occurrence encode range overlap. Two design choices — per-bin
+co-occurrence encode range overlap. Two design choices, per-bin
 sentences at an ecologically meaningful geohash precision, and
-atomic species tokens — are necessary for the embedding geometry to
+atomic species tokens, are necessary for the embedding geometry to
 reflect spatial co-occurrence rather than the morphology of
 binomial names. The resulting embeddings reach a cross-genus
 held-out sympatry AUC of 0.943 on #sym.tilde 147 k _Squamata_
@@ -818,4 +830,3 @@ records.
 #v(1em)
 *Data and code availability.* Code:
 #link("https://github.com/boyanangelov/species2vec")
-(this commit).

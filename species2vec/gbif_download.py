@@ -23,10 +23,16 @@ PAGE_LIMIT = 300
 GBIF = "https://api.gbif.org/v1"
 
 
-def order_key(name: str) -> int:
-    r = requests.get(
-        f"{GBIF}/species/match", params={"name": name, "rank": "order"}, timeout=30
-    )
+def order_key(name: str, rank: str | None = "order") -> int:
+    """Resolve a taxon name to its GBIF backbone usageKey.
+
+    `rank` constrains the lookup (default ORDER for backward compat).
+    Set rank=None to let GBIF pick the best match across all ranks.
+    """
+    params = {"name": name}
+    if rank:
+        params["rank"] = rank
+    r = requests.get(f"{GBIF}/species/match", params=params, timeout=30)
     r.raise_for_status()
     res = r.json()
     if "usageKey" not in res:

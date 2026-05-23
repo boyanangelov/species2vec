@@ -1,0 +1,68 @@
+flowchart TD
+    subgraph BIO["BIOLOGICAL DATA"]
+        A["GBIF occurrence records<br/><i>species name + lat/lon</i>"]
+    end
+
+    subgraph TOK["SPATIAL TOKENISATION"]
+        B["Geohash bin (precision 4)<br/>~20 x 20 km cells"]
+        C["Each cell = a 'sentence'<br/><b>set of species observed there</b><br/><i>distributional hypothesis<br/>applied to ecology</i>"]
+    end
+
+    subgraph EMB["EMBEDDING (fastText skip-gram)"]
+        D["Predict a species' neighbours<br/>from the focal species"]
+        E["100-d vector per species<br/><i>compressed ecological fingerprint</i>"]
+    end
+
+    subgraph GEO["GEOMETRIC PROPERTIES"]
+        F["cosine(sp_A, sp_B) ~ niche overlap"]
+        G1["Clusters recover<br/>Wallace zoogeographic realms"]
+        G2["Nearest neighbours =<br/>ecological analogs"]
+    end
+
+    subgraph EXP["TEMPORAL EXPERIMENT"]
+        P["pre 1990-2009"]
+        Q["post 2017-2026"]
+        P1["fastText -> v_pre(sp)"]
+        Q1["fastText -> v_post(sp)"]
+        R["embedding drift =<br/>1 - cos(v_pre, v_post)"]
+        S["spatial drift =<br/>haversine(centroid_pre,<br/>centroid_post) km"]
+        T["Spearman rho<br/>(emb_drift, spatial_drift)"]
+        U_OK["rho > 0:<br/>moved on map AND<br/>in vector space<br/><i>= climate-tracking signal</i>"]
+    end
+
+    subgraph NULL["PERMUTATION NULL"]
+        N1["Pool pre+post,<br/>shuffle epoch labels,<br/>retrain"]
+        N2["Repeat 10x ->null distribution"]
+        N3["<b>Bombus:</b><br/>observed rho = 0.38<br/>null mean = 0.09<br/>0/10 perms >= observed"]
+    end
+
+    A --> B --> C --> D --> E
+    E --> F
+    F --> G1
+    F --> G2
+
+    A -.epochs.-> P
+    A -.epochs.-> Q
+    P --> P1 --> R
+    Q --> Q1 --> R
+    P --> S
+    Q --> S
+    R --> T
+    S --> T
+    T --> U_OK
+
+    U_OK -.validate.-> N1 --> N2 --> N3
+
+    classDef bio fill:#e8f4e8,stroke:#3a7a3a,stroke-width:2px
+    classDef tok fill:#fff4e6,stroke:#c97c2a,stroke-width:2px
+    classDef emb fill:#e6f0ff,stroke:#3c6eb3,stroke-width:2px
+    classDef geo fill:#f3e8ff,stroke:#7a3aaa,stroke-width:2px
+    classDef exp fill:#ffe8e8,stroke:#aa3a3a,stroke-width:2px
+    classDef null fill:#f5f5dc,stroke:#806000,stroke-width:2px
+
+    class A bio
+    class B,C tok
+    class D,E emb
+    class F,G1,G2 geo
+    class P,Q,P1,Q1,R,S,T,U_OK exp
+    class N1,N2,N3 null

@@ -24,7 +24,6 @@ from gensim.models import KeyedVectors
 from scipy.stats import spearmanr
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT / "runs" / "temporal"
 FIG = ROOT / "manuscript" / "figures"
 
 
@@ -49,11 +48,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--pre-csv", default=str(ROOT / "data" / "squamata_pre.csv"))
     ap.add_argument("--post-csv", default=str(ROOT / "data" / "squamata_post.csv"))
+    ap.add_argument("--outdir", default=str(ROOT / "runs" / "temporal"))
+    ap.add_argument("--figname", default="range_shift.pdf")
+    ap.add_argument("--label", default="Squamata",
+                    help="Taxon label for figure titles.")
     ap.add_argument("--min-records", type=int, default=10,
                     help="min records per species in BOTH slices")
     ap.add_argument("--geohash-precision", type=int, default=4)
     args = ap.parse_args()
 
+    OUT = Path(args.outdir)
     OUT.mkdir(parents=True, exist_ok=True)
     FIG.mkdir(parents=True, exist_ok=True)
 
@@ -127,7 +131,7 @@ def main():
     ax.set_xlabel("centroid drift (km)")
     ax.set_ylabel("species")
     ax.set_title(
-        f"Spatial drift, pre -> post\n"
+        f"{args.label}: spatial drift, pre -> post\n"
         f"median = {summary['centroid_km'].median():.0f} km, "
         f"n = {len(summary)}"
     )
@@ -137,10 +141,10 @@ def main():
                s=10, alpha=0.45, color="#3c6eb3", edgecolor="none")
     ax.set_xlabel("centroid drift (km)")
     ax.set_ylabel(r"embedding distance $1 - \cos(v_{\mathrm{pre}}, v_{\mathrm{post}})$")
-    ax.set_title(f"Embedding tracks spatial drift\nSpearman $\\rho$ = {rho:.3f}")
+    ax.set_title(f"{args.label}: embedding tracks spatial drift\nSpearman $\\rho$ = {rho:.3f}")
 
     fig.tight_layout()
-    out = FIG / "range_shift.pdf"
+    out = FIG / args.figname
     fig.savefig(out, bbox_inches="tight", dpi=150)
     plt.close(fig)
     print(f"wrote {out}")

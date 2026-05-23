@@ -377,7 +377,7 @@ def fig_realm_coherence():
     ax.set_ylim(0, 1.05)
     ax.legend(frameon=False, loc="lower right", fontsize=8)
     for xi, o in zip(x + w / 2, obs_mean):
-        ax.text(xi, o + 0.02, f"{o:.2f}", ha="center", fontsize=7.5)
+        ax.text(xi, o + 0.02, f"{o:.3f}", ha="center", fontsize=7.5)
 
     ax = axes[1]
     realm_names = list(realm_freq.keys())
@@ -392,7 +392,8 @@ def fig_realm_coherence():
     ax.set_xlabel("longitude")
     ax.set_ylabel("latitude")
     ax.set_aspect("equal", adjustable="box")
-    ax.legend(loc="lower left", fontsize=6.5, frameon=False, ncol=2)
+    ax.legend(loc="center left", bbox_to_anchor=(1.01, 0.5),
+              fontsize=6.5, frameon=False, ncol=1)
 
     fig.tight_layout()
     out = FIG / "realm_coherence.pdf"
