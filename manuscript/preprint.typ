@@ -100,7 +100,9 @@
   tokens, the choice of held-out evaluation metrics, and the
   experimental design, are the author's. All quantitative results
   reported here were produced by the accompanying code on real GBIF
-  occurrence data; no numbers were fabricated.
+  occurrence data; no numbers were fabricated. AI accelerated
+  implementation and exposition, not the underlying scientific
+  claims.
 ]
 
 #v(0.6em)

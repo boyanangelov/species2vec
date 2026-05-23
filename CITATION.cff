@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software or its results, please cite it as below."
+title: "species2vec: distributed species embeddings that recover range overlap from GBIF co-occurrence"
+authors:
+  - family-names: Angelov
+    given-names: Boyan
+type: software
+license: MIT
+repository-code: "https://github.com/boyanangelov/species2vec"
+url: "https://github.com/boyanangelov/species2vec"
+date-released: 2026-05-23
+keywords:
+  - species embeddings
+  - representation learning
+  - biodiversity
+  - GBIF
+  - biogeography
+  - fastText
+abstract: >-
+  species2vec learns distributed vector representations of species by
+  treating geo-binned GBIF occurrence records as sentences and applying
+  a fastText objective with atomic species tokens. Held-out evaluation
+  (congener cosine gap, cross-genus sympatry AUC, neighbourhood
+  self-rank) shows the embedding geometry encodes spatial range overlap
+  rather than the morphology of binomial names.
